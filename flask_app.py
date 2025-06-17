@@ -1321,4 +1321,4 @@ def extract_resume_text():
 # Job Matching functionality removed - focusing on other agentic features
 
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0', port=5000)  
+    app.run(debug=True, host='0.0.0.0', port=5000)  
