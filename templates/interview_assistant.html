@@ -4,9 +4,172 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v=4">
+<style>
+/* Modern Loading Screen Styles for Interview Assistant */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 250px; /* Leave space for sidebar */
+    width: calc(100% - 250px); /* Adjust width to exclude sidebar */
+    height: 100%;
+    background: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    z-index: 10000;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+/* Responsive adjustments for loading overlay */
+@media (max-width: 768px) {
+    .loading-overlay {
+        left: 0;
+        width: 100%;
+    }
+}
+
+.loading-overlay.show {
+    display: flex;
+}
+
+.loading-content {
+    text-align: center;
+    color: #2c3e50;
+    max-width: 500px;
+    padding: 40px 30px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.loading-spinner {
+    width: 80px;
+    height: 80px;
+    border: 4px solid rgba(108, 117, 125, 0.2);
+    border-left: 4px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 40px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    opacity: 0;
+    animation: fadeInUp 0.8s ease forwards;
+}
+
+.loading-text {
+    font-size: 1.3rem;
+    font-weight: 500;
+    margin-bottom: 10px;
+    opacity: 0;
+    animation: fadeInUp 0.8s ease 0.2s forwards;
+    min-height: 1.5rem;
+    transition: all 0.5s ease;
+}
+
+.loading-subtext {
+    font-size: 1rem;
+    opacity: 0.8;
+    margin-bottom: 30px;
+    opacity: 0;
+    animation: fadeInUp 0.8s ease 0.4s forwards;
+}
+
+.loading-progress {
+    width: 300px;
+    height: 6px;
+    background: rgba(108, 117, 125, 0.2);
+    border-radius: 3px;
+    margin: 0 auto;
+    overflow: hidden;
+    opacity: 0;
+    animation: fadeInUp 0.8s ease 0.6s forwards;
+}
+
+.loading-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea, #764ba2, #667eea);
+    background-size: 200% 100%;
+    animation: progressMove 2s linear infinite;
+    border-radius: 3px;
+    width: 70%;
+    transition: width 0.3s ease;
+}
+
+@keyframes progressMove {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.loading-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    opacity: 0;
+    animation: fadeInScale 1s ease 0.1s forwards;
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .loading-title { font-size: 2rem; }
+    .loading-text { font-size: 1.1rem; }
+    .loading-progress { width: 250px; }
+    .loading-spinner { width: 60px; height: 60px; }
+}
+</style>
 {% endblock %}
 
 {% block content %}
+<!-- Modern Loading Overlay for Interview Assistant -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-content">
+        <div class="loading-icon" id="loadingIcon">
+            <i class="bi bi-chat-dots"></i>
+        </div>
+        <div class="loading-spinner"></div>
+        <h2 class="loading-title" id="loadingTitle">Generating Questions</h2>
+        <div class="loading-text" id="loadingText">Initializing</div>
+        <div class="loading-subtext" id="loadingSubtext">AI is crafting personalized interview questions</div>
+        <div class="loading-progress">
+            <div class="loading-progress-bar" id="loadingProgressBar"></div>
+        </div>
+    </div>
+</div>
+
 <!-- Sidebar -->
 <div class="sidebar">
     <div class="brand-logo">
@@ -743,6 +906,99 @@ function updateProgressSteps(activeTab) {
     });
 }
 
+// Modern Loading Screen Controller for Interview Assistant
+class InterviewLoadingController {
+    constructor() {
+        this.overlay = document.getElementById('loadingOverlay');
+        this.icon = document.getElementById('loadingIcon');
+        this.title = document.getElementById('loadingTitle');
+        this.text = document.getElementById('loadingText');
+        this.subtext = document.getElementById('loadingSubtext');
+        this.progressBar = document.getElementById('loadingProgressBar');
+        this.currentStep = 0;
+        this.steps = [];
+        this.interval = null;
+    }
+
+    show() {
+        // Set interview question generation steps
+        this.setupInterviewSteps();
+        
+        // Show overlay
+        this.overlay.classList.add('show');
+        
+        // Start step animation
+        this.currentStep = 0;
+        this.updateStep();
+        this.startStepAnimation();
+    }
+
+    hide() {
+        this.overlay.classList.remove('show');
+        
+        // Clear interval
+        if (this.interval) {
+            clearInterval(this.interval);
+            this.interval = null;
+        }
+    }
+
+    setupInterviewSteps() {
+        this.icon.innerHTML = '<i class="bi bi-chat-dots"></i>';
+        this.title.textContent = 'Generating Interview Questions';
+        this.subtext.textContent = 'AI is crafting personalized interview questions';
+        
+        this.steps = [
+            { text: 'Analyzing job description', progress: 15 },
+            { text: 'Processing candidate profile', progress: 25 },
+            { text: 'Understanding role requirements', progress: 40 },
+            { text: 'Selecting question categories', progress: 55 },
+            { text: 'Crafting technical questions', progress: 70 },
+            { text: 'Generating behavioral questions', progress: 85 },
+            { text: 'Finalizing question set', progress: 95 },
+            { text: 'Questions ready!', progress: 100 }
+        ];
+    }
+
+    updateStep() {
+        if (this.currentStep < this.steps.length) {
+            const step = this.steps[this.currentStep];
+            
+            // Update text with fade effect
+            this.text.style.opacity = '0';
+            setTimeout(() => {
+                this.text.textContent = step.text;
+                this.text.style.opacity = '1';
+            }, 250);
+            
+            // Update progress bar
+            this.progressBar.style.width = step.progress + '%';
+        }
+    }
+
+    startStepAnimation() {
+        // Initial delay
+        setTimeout(() => {
+            this.interval = setInterval(() => {
+                this.currentStep++;
+                
+                if (this.currentStep < this.steps.length) {
+                    this.updateStep();
+                } else {
+                    // Don't hide automatically - let the actual response handle it
+                    if (this.interval) {
+                        clearInterval(this.interval);
+                        this.interval = null;
+                    }
+                }
+            }, 1500); // Change step every 1.5 seconds
+        }, 1000); // Initial 1 second delay
+    }
+}
+
+// Initialize interview loading controller
+const interviewLoadingController = new InterviewLoadingController();
+
 // Form submission
 document.getElementById('interviewSetupForm').addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -767,8 +1023,8 @@ document.getElementById('interviewSetupForm').addEventListener('submit', async f
         return;
     }
     
-    // Show loading
-    document.getElementById('loadingOverlay').style.display = 'flex';
+    // Show modern loading screen
+    interviewLoadingController.show();
     
     try {
         const response = await fetch('/api/generate_interview_questions', {
@@ -797,7 +1053,8 @@ document.getElementById('interviewSetupForm').addEventListener('submit', async f
     } catch (error) {
         alert('Error: ' + error.message);
     } finally {
-        document.getElementById('loadingOverlay').style.display = 'none';
+        // Hide modern loading screen
+        interviewLoadingController.hide();
     }
 });
 
@@ -815,7 +1072,22 @@ function displayQuestions(questions) {
         return;
     }
     
-    let html = '';
+    let html = `
+        <div class="questions-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5><i class="bi bi-list-check me-2"></i>Generated Interview Questions</h5>
+                <div class="questions-actions">
+                    <button class="btn-regenerate" onclick="regenerateQuestions()">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Regenerate
+                    </button>
+                    <button class="btn-start-interview" onclick="startResponseCollection()">
+                        <i class="bi bi-play-circle me-1"></i>Start Interview
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
     questions.forEach((question, index) => {
         let followUpHtml = '';
         if (question.follow_up_questions) {
@@ -842,19 +1114,329 @@ function displayQuestions(questions) {
         }
         
         html += `
-            <div class="question-card">
+            <div class="question-card" id="question-${question.id || index + 1}">
                 <div class="question-header">
                     <div class="question-number">${index + 1}</div>
                     <span class="category-badge ${question.category}">${question.category.replace('_', ' ').toUpperCase()}</span>
+                    <small class="question-time">${question.time_minutes || 5} min</small>
                 </div>
                 <div class="question-text">${question.question}</div>
                 ${followUpHtml}
                 ${evaluationHtml}
+                
+                <!-- Response Collection Area (Hidden by default) -->
+                <div class="response-area" id="response-${question.id || index + 1}" style="display: none;">
+                    <div class="mt-3 pt-3 border-top">
+                        <label class="form-label fw-bold text-primary">Candidate Response:</label>
+                        <textarea class="form-control response-input" 
+                                  placeholder="Enter or record candidate's response..." 
+                                  rows="4" 
+                                  data-question-id="${question.id || index + 1}"></textarea>
+                        <div class="mt-2">
+                            <small class="text-muted">Record detailed notes about the candidate's response, including follow-up answers.</small>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
     });
     
+            // Add evaluation section at the bottom
+        html += `
+            <div class="evaluation-section-container" id="evaluationSection" style="display: none;">
+                <div class="evaluation-card">
+                    <div class="evaluation-card-header">
+                        <h5><i class="bi bi-clipboard-check me-2"></i>Response Evaluation</h5>
+                    </div>
+                    <div class="evaluation-card-body">
+                        <div class="evaluation-form-row">
+                            <div class="evaluation-form-group">
+                                <label>Candidate Name (Optional)</label>
+                                <input type="text" id="candidateName" placeholder="Enter candidate's name">
+                            </div>
+                            <div class="evaluation-form-group">
+                                <label>Interview Date</label>
+                                <input type="date" id="interviewDate" value="${new Date().toISOString().split('T')[0]}">
+                            </div>
+                        </div>
+                        <button class="btn-evaluate" onclick="evaluateResponses()">
+                            <i class="bi bi-graph-up me-2"></i>Evaluate All Responses
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Evaluation Results Section -->
+            <div class="evaluation-results" id="evaluationResults" style="display: none;"></div>
+        `;
+    
     container.innerHTML = html;
+}
+
+function startResponseCollection() {
+    // Show all response areas
+    document.querySelectorAll('.response-area').forEach(area => {
+        area.style.display = 'block';
+    });
+    
+    // Show evaluation section
+    document.getElementById('evaluationSection').style.display = 'block';
+    
+    // Update button
+    const startBtn = document.querySelector('[onclick="startResponseCollection()"]');
+    if (startBtn) {
+        startBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Response Collection Started';
+        startBtn.className = 'btn-interview-started';
+        startBtn.disabled = true;
+    }
+    
+    // Scroll to first question
+    document.querySelector('.question-card').scrollIntoView({ behavior: 'smooth' });
+}
+
+function evaluateResponses() {
+    const responses = {};
+    let hasResponses = false;
+    
+    // Collect all responses
+    document.querySelectorAll('.response-input').forEach(input => {
+        const questionId = input.dataset.questionId;
+        const response = input.value.trim();
+        if (response) {
+            responses[questionId] = response;
+            hasResponses = true;
+        }
+    });
+    
+    if (!hasResponses) {
+        alert('Please enter at least one candidate response to evaluate.');
+        return;
+    }
+    
+    const candidateName = document.getElementById('candidateName').value || 'Candidate';
+    const interviewDate = document.getElementById('interviewDate').value;
+    const model = document.getElementById('modelSelect').value;
+    
+    // Show loading
+    const evaluateBtn = document.querySelector('[onclick="evaluateResponses()"]');
+    const originalText = evaluateBtn.innerHTML;
+    evaluateBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Evaluating...';
+    evaluateBtn.disabled = true;
+    
+    // Send to backend for evaluation
+    fetch('/api/evaluate_interview_responses', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            questions: generatedQuestions,
+            responses: responses,
+            model: model,
+            candidate_name: candidateName,
+            interview_date: interviewDate
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayEvaluationResults(data.evaluation);
+        } else {
+            alert('Error evaluating responses: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error evaluating responses: ' + error.message);
+    })
+    .finally(() => {
+        evaluateBtn.innerHTML = originalText;
+        evaluateBtn.disabled = false;
+    });
+}
+
+function displayEvaluationResults(evaluation) {
+    const resultsContainer = document.getElementById('evaluationResults');
+    
+    if (!evaluation) {
+        resultsContainer.innerHTML = '<div class="alert alert-warning">No evaluation data received.</div>';
+        return;
+    }
+    
+    let html = `
+        <div class="evaluation-results-card">
+            <div class="evaluation-results-header">
+                <h5><i class="bi bi-graph-up me-2"></i>Interview Evaluation Results</h5>
+            </div>
+            <div class="evaluation-results-body">
+    `;
+    
+    // Overall Assessment
+    if (evaluation.overall_assessment) {
+        const assessment = evaluation.overall_assessment;
+        html += `
+            <div class="overall-assessment">
+                <h6>Overall Assessment</h6>
+                <div class="assessment-grid">
+                    <div class="score-display">
+                        <div class="score-value">${assessment.percentage || 'N/A'}%</div>
+                        <div class="score-label">Overall Score</div>
+                    </div>
+                    <div class="grade-display">
+                        <div class="grade-value">${assessment.grade || 'N/A'}</div>
+                        <div class="grade-label">Grade</div>
+                    </div>
+                    <div>
+                        <div class="recommendation-text">Recommendation: ${assessment.recommendation || 'N/A'}</div>
+                        <p class="recommendation-reasoning">${assessment.reasoning || 'No reasoning provided.'}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Category Scores
+    if (evaluation.category_scores) {
+        html += `
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h6>Category Performance</h6>
+                    <div class="row">
+        `;
+        
+        Object.entries(evaluation.category_scores).forEach(([category, scoreData]) => {
+            const percentage = Math.round((scoreData.score / scoreData.out_of) * 100);
+            html += `
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h6 class="card-title text-capitalize">${category.replace('_', ' ')}</h6>
+                            <div class="progress mb-2">
+                                <div class="progress-bar" style="width: ${percentage}%"></div>
+                            </div>
+                            <span class="badge bg-primary">${scoreData.score}/${scoreData.out_of}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Individual Question Evaluations
+    if (evaluation.individual_evaluations && evaluation.individual_evaluations.length > 0) {
+        html += `
+            <div class="mb-4">
+                <h6>Individual Question Analysis</h6>
+                <div class="accordion" id="questionAccordion">
+        `;
+        
+        evaluation.individual_evaluations.forEach((questionEval, index) => {
+            const scoreClass = questionEval.score >= 4 ? 'success' : questionEval.score >= 3 ? 'warning' : 'danger';
+            html += `
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}">
+                            <div class="d-flex justify-content-between w-100 me-3">
+                                <span>Question ${questionEval.question_id}: ${questionEval.question?.substring(0, 80)}${questionEval.question?.length > 80 ? '...' : ''}</span>
+                                <span class="badge bg-${scoreClass}">${questionEval.score}/5</span>
+                            </div>
+                        </button>
+                    </h2>
+                    <div id="collapse${index}" class="accordion-collapse collapse" data-bs-parent="#questionAccordion">
+                        <div class="accordion-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="text-success">Strengths:</h6>
+                                    <ul class="list-unstyled">
+                                        ${(questionEval.strengths || []).map(strength => `<li class="mb-1">✓ ${strength}</li>`).join('')}
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-warning">Areas for Improvement:</h6>
+                                    <ul class="list-unstyled">
+                                        ${(questionEval.areas_for_improvement || []).map(area => `<li class="mb-1">→ ${area}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <h6>Detailed Feedback:</h6>
+                                <p class="text-muted">${questionEval.feedback || 'No detailed feedback available.'}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `
+                </div>
+            </div>
+        `;
+    }
+    
+    // Overall Feedback
+    if (evaluation.overall_feedback) {
+        const feedback = evaluation.overall_feedback;
+        html += `
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card border-success">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0">Key Strengths</h6>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled mb-0">
+                                ${(feedback.key_strengths || []).map(strength => `<li class="mb-2">✓ ${strength}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-warning">
+                        <div class="card-header bg-warning text-dark">
+                            <h6 class="mb-0">Areas for Improvement</h6>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled mb-0">
+                                ${(feedback.areas_for_improvement || []).map(area => `<li class="mb-2">→ ${area}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Next Steps
+    if (evaluation.next_steps) {
+        const nextSteps = evaluation.next_steps;
+        html += `
+            <div class="alert alert-primary">
+                <h6 class="alert-heading">Recommended Next Steps</h6>
+                <p><strong>Recommendation:</strong> ${nextSteps.recommendation || 'No recommendation provided'}</p>
+                ${nextSteps.focus_areas && nextSteps.focus_areas.length > 0 ? 
+                    `<p><strong>Focus Areas:</strong> ${nextSteps.focus_areas.join(', ')}</p>` : ''}
+                ${nextSteps.timeline ? `<p><strong>Timeline:</strong> ${nextSteps.timeline}</p>` : ''}
+            </div>
+        `;
+    }
+    
+    html += `
+            </div>
+        </div>
+    `;
+    
+    resultsContainer.innerHTML = html;
+    resultsContainer.style.display = 'block';
+    
+    // Scroll to results
+    resultsContainer.scrollIntoView({ behavior: 'smooth' });
 }
 
 function regenerateQuestions() {

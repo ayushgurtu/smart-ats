@@ -4,9 +4,205 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v=4">
+<style>
+/* Modern Loading Screen Styles */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 250px; /* Leave space for sidebar */
+    width: calc(100% - 250px); /* Adjust width to exclude sidebar */
+    height: 100%;
+    background: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    z-index: 10000;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+/* Responsive adjustments for loading overlay */
+@media (max-width: 768px) {
+    .loading-overlay {
+        left: 0;
+        width: 100%;
+    }
+}
+
+.loading-overlay.show {
+    display: flex;
+}
+
+
+
+.loading-content {
+    text-align: center;
+    color: #2c3e50;
+    max-width: 500px;
+    padding: 40px 30px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.loading-spinner {
+    width: 80px;
+    height: 80px;
+    border: 4px solid rgba(108, 117, 125, 0.2);
+    border-left: 4px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 40px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    opacity: 0;
+    animation: fadeInUp 0.8s ease forwards;
+}
+
+.loading-text {
+    font-size: 1.3rem;
+    font-weight: 500;
+    margin-bottom: 10px;
+    opacity: 0;
+    animation: fadeInUp 0.8s ease 0.2s forwards;
+    min-height: 1.5rem;
+    transition: all 0.5s ease;
+}
+
+.loading-subtext {
+    font-size: 1rem;
+    opacity: 0.8;
+    margin-bottom: 30px;
+    opacity: 0;
+    animation: fadeInUp 0.8s ease 0.4s forwards;
+}
+
+.loading-progress {
+    width: 300px;
+    height: 6px;
+    background: rgba(108, 117, 125, 0.2);
+    border-radius: 3px;
+    margin: 0 auto;
+    overflow: hidden;
+    opacity: 0;
+    animation: fadeInUp 0.8s ease 0.6s forwards;
+}
+
+.loading-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea, #764ba2, #667eea);
+    background-size: 200% 100%;
+    animation: progressMove 2s linear infinite;
+    border-radius: 3px;
+    width: 70%;
+    transition: width 0.3s ease;
+}
+
+@keyframes progressMove {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.loading-dots {
+    display: inline-block;
+    position: relative;
+    width: 20px;
+    height: 1.5rem;
+}
+
+.loading-dots span {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: loadingDots 1.4s infinite ease-in-out both;
+}
+
+.loading-dots span:nth-child(1) { left: 0; animation-delay: -0.32s; }
+.loading-dots span:nth-child(2) { left: 6px; animation-delay: -0.16s; }
+.loading-dots span:nth-child(3) { left: 12px; animation-delay: 0s; }
+
+@keyframes loadingDots {
+    0%, 80%, 100% {
+        transform: scale(0);
+        opacity: 0.5;
+    }
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.loading-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    opacity: 0;
+    animation: fadeInScale 1s ease 0.1s forwards;
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .loading-title { font-size: 2rem; }
+    .loading-text { font-size: 1.1rem; }
+    .loading-progress { width: 250px; }
+    .loading-spinner { width: 60px; height: 60px; }
+}
+</style>
 {% endblock %}
 
 {% block content %}
+<!-- Modern Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-content">
+        <div class="loading-icon" id="loadingIcon">
+            <i class="bi bi-magic"></i>
+        </div>
+        <div class="loading-spinner"></div>
+        <h2 class="loading-title" id="loadingTitle">Processing</h2>
+        <div class="loading-text" id="loadingText">Initializing</div>
+        <div class="loading-subtext" id="loadingSubtext">Please wait while we process your request</div>
+        <div class="loading-progress">
+            <div class="loading-progress-bar" id="loadingProgressBar"></div>
+        </div>
+    </div>
+</div>
+
 <!-- Sidebar -->
 <div class="sidebar">
     <div class="brand-logo">
@@ -51,8 +247,13 @@
                 <h1 class="page-title">Your Resume Analysis</h1>
                 <p class="page-subtitle">Welcome back, {{ username }}! Track your resume performance and optimize for ATS systems.</p>
             </div>
-            <div class="d-flex align-items-center">
+                            <div class="d-flex align-items-center">
                 <span class="status-badge status-active me-3">Active</span>
+                {% if analysis %}
+                <button class="btn btn-success me-2" id="downloadReportBtn">
+                    <i class="bi bi-download me-2"></i>Download Report PDF
+                </button>
+                {% endif %}
                 <a href="{{ url_for('reset_analysis') }}" class="btn btn-primary" id="newAnalysisBtn">
                     <i class="bi bi-plus me-2"></i>New Analysis
                 </a>
@@ -174,7 +375,20 @@
                 </div>
                 <div class="tab-pane fade" id="tools" role="tabpanel">
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="mb-3">
+                                        <i class="bi bi-file-earmark-pdf me-2"></i>Analysis Report
+                                    </h6>
+                                    <p class="text-muted small mb-3">Download a comprehensive PDF report with charts</p>
+                                    <button class="btn btn-success w-100" id="downloadReportBtnTools">
+                                        <i class="bi bi-download me-2"></i>Download PDF Report
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
                             <div class="card">
                                 <div class="card-body">
                                     <h6 class="mb-3">
@@ -202,7 +416,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <div class="card">
                                 <div class="card-body">
                                     <h6 class="mb-3">
@@ -342,6 +556,119 @@
 
 {% block extra_scripts %}
 <script>
+// Modern Loading Screen Controller
+class LoadingController {
+    constructor() {
+        this.overlay = document.getElementById('loadingOverlay');
+        this.icon = document.getElementById('loadingIcon');
+        this.title = document.getElementById('loadingTitle');
+        this.text = document.getElementById('loadingText');
+        this.subtext = document.getElementById('loadingSubtext');
+        this.progressBar = document.getElementById('loadingProgressBar');
+        this.currentStep = 0;
+        this.steps = [];
+        this.interval = null;
+    }
+
+    show(type = 'analyze') {
+        // Set appropriate loading messages based on type
+        if (type === 'analyze') {
+            this.setupAnalyzeSteps();
+        } else if (type === 'pdf') {
+            this.setupPdfSteps();
+        }
+
+        // Show overlay
+        this.overlay.classList.add('show');
+        // Don't prevent body scroll since we're not covering the entire screen
+        
+        // Start step animation
+        this.currentStep = 0;
+        this.updateStep();
+        this.startStepAnimation();
+    }
+
+    hide() {
+        this.overlay.classList.remove('show');
+        
+        // Clear interval
+        if (this.interval) {
+            clearInterval(this.interval);
+            this.interval = null;
+        }
+    }
+
+    setupAnalyzeSteps() {
+        this.icon.innerHTML = '<i class="bi bi-magic"></i>';
+        this.title.textContent = 'Analyzing Resume';
+        this.subtext.textContent = 'Our AI is carefully reviewing your resume';
+        
+        this.steps = [
+            { text: 'Parsing resume content', progress: 15 },
+            { text: 'Extracting key information', progress: 25 },
+            { text: 'Analyzing job requirements', progress: 40 },
+            { text: 'Matching skills and experience', progress: 55 },
+            { text: 'Identifying improvement areas', progress: 70 },
+            { text: 'Generating ATS optimization tips', progress: 85 },
+            { text: 'Finalizing analysis report', progress: 95 },
+            { text: 'Complete! Redirecting...', progress: 100 }
+        ];
+    }
+
+    setupPdfSteps() {
+        this.icon.innerHTML = '<i class="bi bi-file-earmark-pdf"></i>';
+        this.title.textContent = 'Generating PDF Report';
+        this.subtext.textContent = 'Creating your professional analysis report';
+        
+        this.steps = [
+            { text: 'Preparing report data', progress: 20 },
+            { text: 'Designing modern layout', progress: 35 },
+            { text: 'Creating performance charts', progress: 50 },
+            { text: 'Generating skill analysis', progress: 65 },
+            { text: 'Compiling recommendations', progress: 80 },
+            { text: 'Finalizing PDF document', progress: 95 },
+            { text: 'Download ready!', progress: 100 }
+        ];
+    }
+
+    updateStep() {
+        if (this.currentStep < this.steps.length) {
+            const step = this.steps[this.currentStep];
+            
+            // Update text with fade effect
+            this.text.style.opacity = '0';
+            setTimeout(() => {
+                this.text.textContent = step.text;
+                this.text.style.opacity = '1';
+            }, 250);
+            
+            // Update progress bar
+            this.progressBar.style.width = step.progress + '%';
+        }
+    }
+
+    startStepAnimation() {
+        // Initial delay
+        setTimeout(() => {
+            this.interval = setInterval(() => {
+                this.currentStep++;
+                
+                if (this.currentStep < this.steps.length) {
+                    this.updateStep();
+                } else {
+                    // Don't hide automatically - let the actual response handle it
+                    if (this.interval) {
+                        clearInterval(this.interval);
+                        this.interval = null;
+                    }
+                }
+            }, 1500); // Change step every 1.5 seconds
+        }, 1000); // Initial 1 second delay
+    }
+}
+
+// Initialize loading controller
+const loadingController = new LoadingController();
 const uploadArea = document.getElementById('uploadArea');
 const fileInput = document.getElementById('resume_file');
 
@@ -429,8 +756,12 @@ document.getElementById('resumeForm').addEventListener('submit', function(e) {
         return false;
     }
     
+    // Show modern loading screen for analyze
+    loadingController.show('analyze');
+    
     if (resumeFile.type !== 'application/pdf') {
         e.preventDefault();
+        loadingController.hide(); // Hide loading if validation fails
         alert('❌ Please upload a PDF file only');
         return false;
     }
@@ -551,6 +882,113 @@ if (newAnalysisBtn) {
             if (confirm('🔄 Are you sure you want to start a new analysis? This will clear your current results.')) {
                 window.location.href = this.href;
             }
+        }
+    });
+}
+
+// Download Analysis Report PDF functionality
+const downloadReportBtn = document.getElementById('downloadReportBtn');
+if (downloadReportBtn) {
+    downloadReportBtn.addEventListener('click', function() {
+        const originalText = this.innerHTML;
+        
+        // Show modern loading screen for PDF generation
+        loadingController.show('pdf');
+        
+        // Show loading state on button
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Generating PDF...';
+        this.disabled = true;
+        
+        // Create a form to submit the PDF download request
+        fetch('/api/download_analysis_report_pdf', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => Promise.reject(err));
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            // Create download link
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            
+            // Generate filename with timestamp
+            const now = new Date();
+            const timestamp = now.getFullYear() + 
+                            (now.getMonth() + 1).toString().padStart(2, '0') + 
+                            now.getDate().toString().padStart(2, '0') + '_' +
+                            now.getHours().toString().padStart(2, '0') + 
+                            now.getMinutes().toString().padStart(2, '0') + 
+                            now.getSeconds().toString().padStart(2, '0');
+            
+            a.download = `resume_analysis_report_${timestamp}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            // Show success message
+            const successAlert = document.createElement('div');
+            successAlert.className = 'alert alert-success alert-dismissible fade show position-fixed';
+            successAlert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            successAlert.innerHTML = `
+                <i class="bi bi-check-circle me-2"></i>Analysis report downloaded successfully!
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(successAlert);
+            
+            // Auto-dismiss after 4 seconds
+            setTimeout(() => {
+                if (successAlert.parentNode) {
+                    successAlert.remove();
+                }
+            }, 4000);
+        })
+        .catch(error => {
+            console.error('Error downloading PDF:', error);
+            
+            // Show error message
+            const errorAlert = document.createElement('div');
+            errorAlert.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+            errorAlert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            errorAlert.innerHTML = `
+                <i class="bi bi-exclamation-triangle me-2"></i>Error downloading report: ${error.error || 'Please try again'}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(errorAlert);
+            
+            // Auto-dismiss after 6 seconds
+            setTimeout(() => {
+                if (errorAlert.parentNode) {
+                    errorAlert.remove();
+                }
+            }, 6000);
+        })
+        .finally(() => {
+            // Hide loading screen
+            loadingController.hide();
+            
+            // Reset button state
+            this.innerHTML = originalText;
+            this.disabled = false;
+                 });
+     });
+}
+
+// Download Analysis Report PDF functionality (Tools section)
+const downloadReportBtnTools = document.getElementById('downloadReportBtnTools');
+if (downloadReportBtnTools) {
+    downloadReportBtnTools.addEventListener('click', function() {
+        // Trigger the same functionality as the main download button
+        if (downloadReportBtn) {
+            downloadReportBtn.click();
         }
     });
 }

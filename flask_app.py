@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup
 from mcq_utils import QuestionGenerator, get_response
 from groq import Groq
 from PyPDF2 import PdfReader
-from pdf_generator import generate_resume_pdf, generate_cover_letter_pdf
+from pdf_generator import generate_resume_pdf, generate_cover_letter_pdf, generate_analysis_report_pdf
 
 
 # Suppress LangChain deprecation warnings
@@ -29,8 +29,9 @@ try:
     from rag.llm_service import get_llm
     from rag.rag_qa_chain import create_rag_chain, create_conversation_chain
     RAG_AVAILABLE = True
+    print("✅ RAG modules loaded successfully")
 except ImportError as e:
-    print(f"Warning: RAG modules not available: {e}")
+    print(f"⚠️  Warning: RAG modules not available: {e}")
     RAG_AVAILABLE = False
 
 # Load environment variables
@@ -529,6 +530,44 @@ def download_cover_letter_pdf():
     except Exception as e:
         return jsonify({'error': f'Error generating PDF: {str(e)}'}), 500
 
+@app.route('/api/download_analysis_report_pdf', methods=['POST'])
+@login_required
+@role_required('Applicant')
+def download_analysis_report_pdf():
+    """Download analysis report as PDF"""
+    try:
+        # Get analysis from temporary storage
+        analysis_data = get_analysis_data()
+        if not analysis_data:
+            return jsonify({'error': 'No analysis data found. Please analyze your resume first.'}), 400
+        
+        # Import the analysis report PDF generator
+        from pdf_generator import generate_analysis_report_pdf
+        
+        # Generate PDF
+        username = session.get('username', 'User')
+        pdf_buffer = generate_analysis_report_pdf(analysis_data, username)
+        
+        # Generate filename
+        from datetime import datetime
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"resume_analysis_report_{timestamp}.pdf"
+        
+        # Return PDF as response
+        response = Response(
+            pdf_buffer.getvalue(),
+            mimetype='application/pdf',
+            headers={'Content-Disposition': f'attachment; filename="{filename}"'}
+        )
+        
+        return response
+        
+    except Exception as e:
+        print(f"Error generating analysis report PDF: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Error generating PDF: {str(e)}'}), 500
+
 # Interview Assistant Routes for Hiring Companies
 @app.route('/interview_assistant')
 @login_required
@@ -954,11 +993,17 @@ def process_rag_question(prompt, llm_provider="groq", model="llama3-8b-8192", re
     """Process a question using the RAG system"""
     try:
         if not RAG_AVAILABLE:
-            return "Sorry, the RAG system is not available. Please check the system configuration.", [], "RAG system not available"
+            print("⚠️  RAG system not available, using fallback response")
+            return get_fallback_response(prompt, llm_provider, model), [], None
         
-        # Initialize RAG components
-        embedding_function = get_embedding_function()
-        vector_store = get_or_create_vector_store(embedding_function)
+        # Initialize RAG components with error handling
+        try:
+            embedding_function = get_embedding_function()
+            vector_store = get_or_create_vector_store(embedding_function)
+        except Exception as rag_error:
+            print(f"⚠️  RAG initialization failed: {rag_error}")
+            print("🔄 Falling back to direct LLM response...")
+            return get_fallback_response(prompt, llm_provider, model), [], None
         
         # Select retriever based on strategy
         search_kwargs = {"k": num_sources}
@@ -1320,5 +1365,36 @@ def extract_resume_text():
 
 # Job Matching functionality removed - focusing on other agentic features
 
+# Fallback function for when RAG is not available
+def get_fallback_response(prompt, llm_provider="groq", model="llama3-8b-8192"):
+    """Generate response using LLM without RAG when vector store is not available"""
+    try:
+        llm = get_llm(provider=llm_provider, model=model)
+        
+        fallback_prompt = f"""
+        You are a helpful AI career assistant. The user has asked: "{prompt}"
+        
+        Please provide a helpful response based on general career guidance best practices. 
+        Focus on actionable advice for:
+        - Resume optimization and ATS systems
+        - Job search strategies
+        - Interview preparation
+        - Career development
+        - Professional networking
+        
+        Provide specific, practical advice even without access to specific job data.
+        
+        Response:
+        """
+        
+        if hasattr(llm, 'invoke'):
+            response = llm.invoke(fallback_prompt)
+            return response.content if hasattr(response, 'content') else str(response)
+        else:
+            return llm(fallback_prompt)
+            
+    except Exception as e:
+        return f"I'm experiencing technical difficulties. Please try again later. Error: {str(e)}"
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)  
+    app.run(debug=False, host='0.0.0.0', port=5000)  

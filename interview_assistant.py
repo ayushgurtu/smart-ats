@@ -127,16 +127,69 @@ class InterviewAssistant:
             return {'error': str(e)}
 
     def evaluate_responses(self, model: str, api_key: str, questions: List[Dict], 
-                         responses: Dict) -> Dict:
-        """Evaluate candidate responses"""
+                         responses: Dict, candidate_name: str = "Candidate") -> Dict:
+        """Evaluate candidate responses with comprehensive AI analysis"""
         
         prompt = f"""
-        Evaluate these interview responses:
-        
-        Questions: {json.dumps(questions)}
-        Responses: {json.dumps(responses)}
-        
-        Return JSON with scores (1-5), feedback, and recommendation.
+        You are an expert interview evaluator. Analyze these candidate responses with professional rigor.
+
+        QUESTIONS AND RESPONSES:
+        {self._format_questions_and_responses(questions, responses)}
+
+        EVALUATION INSTRUCTIONS:
+        1. Score each response on a scale of 1-5 (1=Poor, 2=Below Average, 3=Average, 4=Good, 5=Excellent)
+        2. Consider: Relevance, Technical accuracy, Communication clarity, Examples/specifics, Problem-solving approach
+        3. Provide constructive feedback for improvement
+        4. Generate an overall assessment with hiring recommendation
+
+        RETURN EXACTLY THIS JSON FORMAT:
+        {{
+            "individual_evaluations": [
+                {{
+                    "question_id": 1,
+                    "question": "Original question text",
+                    "candidate_response": "Candidate's response",
+                    "score": 4,
+                    "strengths": ["Specific strength 1", "Specific strength 2"],
+                    "areas_for_improvement": ["Specific improvement 1", "Specific improvement 2"],
+                    "feedback": "Detailed constructive feedback",
+                    "category": "technical"
+                }}
+            ],
+            "overall_assessment": {{
+                "total_score": 32,
+                "max_possible_score": 40,
+                "percentage": 80,
+                "grade": "B+",
+                "recommendation": "Strong Hire",
+                "reasoning": "Detailed reasoning for recommendation"
+            }},
+            "category_scores": {{
+                "technical": {{"score": 4.2, "out_of": 5}},
+                "behavioral": {{"score": 3.8, "out_of": 5}},
+                "cultural": {{"score": 4.0, "out_of": 5}}
+            }},
+            "overall_feedback": {{
+                "key_strengths": ["Strength 1", "Strength 2", "Strength 3"],
+                "areas_for_improvement": ["Improvement 1", "Improvement 2"],
+                "interview_highlights": ["Notable response or insight"],
+                "red_flags": ["Any concerning responses or gaps"]
+            }},
+            "next_steps": {{
+                "recommendation": "Proceed to final round",
+                "focus_areas": ["Areas to explore in next interview"],
+                "technical_assessment": "Recommended if technical gaps identified",
+                "timeline": "Suggested timeline for next steps"
+            }},
+            "interviewer_notes": {{
+                "communication_skills": "Assessment of communication ability",
+                "cultural_fit": "Assessment of cultural alignment",
+                "growth_potential": "Assessment of learning and growth mindset",
+                "leadership_indicators": "Signs of leadership potential if applicable"
+            }}
+        }}
+
+        Ensure all scores are realistic and feedback is actionable. Be thorough but concise.
         """
         
         try:
@@ -145,10 +198,94 @@ class InterviewAssistant:
             else:
                 response = get_groq_response(model, api_key, prompt)
             
-            return json.loads(response)
+            # Parse and validate response similar to question generation
+            return self._parse_evaluation_response(response)
             
         except Exception as e:
             return {'error': str(e)}
+
+    def _format_questions_and_responses(self, questions: List[Dict], responses: Dict) -> str:
+        """Format questions and responses for AI evaluation"""
+        formatted_text = ""
+        
+        for i, question in enumerate(questions, 1):
+            response_key = str(question.get('id', i))
+            candidate_response = responses.get(response_key, "No response provided")
+            
+            formatted_text += f"""
+            
+QUESTION {i}:
+Category: {question.get('category', 'General')}
+Question: {question.get('question', 'Question text not available')}
+Expected Evaluation Criteria: {', '.join(question.get('evaluation_criteria', ['General assessment']))}
+
+CANDIDATE RESPONSE:
+{candidate_response}
+
+---
+            """
+        
+        return formatted_text.strip()
+
+    def _parse_evaluation_response(self, response: str) -> Dict:
+        """Parse and validate AI evaluation response"""
+        try:
+            # Try direct JSON parsing first
+            return json.loads(response)
+        except json.JSONDecodeError:
+            # Apply similar JSON cleaning as in question generation
+            import re
+            
+            # Remove any markdown formatting
+            response = re.sub(r'```json\s*', '', response)
+            response = re.sub(r'```\s*$', '', response)
+            
+            # Try to find JSON object
+            json_match = re.search(r'\{.*\}', response, re.DOTALL)
+            if json_match:
+                json_str = json_match.group()
+                
+                # Common fixes for malformed JSON
+                json_str = re.sub(r',\s*}', '}', json_str)  # Remove trailing commas
+                json_str = re.sub(r',\s*]', ']', json_str)  # Remove trailing commas in arrays
+                
+                try:
+                    return json.loads(json_str)
+                except json.JSONDecodeError:
+                    pass
+            
+            # If all parsing attempts fail, return a fallback structure
+            return {
+                'error': f'Failed to parse evaluation response: {response[:200]}...',
+                'individual_evaluations': [],
+                'overall_assessment': {
+                    'total_score': 0,
+                    'max_possible_score': 0,
+                    'percentage': 0,
+                    'grade': 'N/A',
+                    'recommendation': 'Unable to evaluate due to parsing error',
+                    'reasoning': 'AI response could not be parsed'
+                },
+                'category_scores': {},
+                'overall_feedback': {
+                    'key_strengths': [],
+                    'areas_for_improvement': ['Evaluation could not be completed'],
+                    'interview_highlights': [],
+                    'red_flags': []
+                },
+                'next_steps': {
+                    'recommendation': 'Manual review required',
+                    'focus_areas': [],
+                    'technical_assessment': 'N/A',
+                    'timeline': 'N/A'
+                },
+                'interviewer_notes': {
+                    'communication_skills': 'N/A',
+                    'cultural_fit': 'N/A',
+                    'growth_potential': 'N/A',
+                    'leadership_indicators': 'N/A'
+                }
+            }
 
     def generate_interview_report(self, questions_data: Dict, evaluation_data: Dict,
                                 candidate_info: Dict, interviewer_notes: str = "") -> Dict:
