@@ -35,6 +35,31 @@ rag/
 └── 📄 vector_store.py         # Vector database operations
 ```
 
+### `/evaluation/` - **FAQ Assistant Evaluation System**
+```
+evaluation/
+├── 📄 __init__.py                      # Package initialization
+├── 📄 README.md                        # Evaluation system documentation
+├── 📄 deepeval_evaluation_runner.py    # DeepEval framework runner
+├── 📄 ragas_evaluation_runner.py       # RAGAS evaluation runner
+├── 📄 ragas_evaluator.py              # RAGAS evaluation implementation
+├── 📄 ragas_results_processor.py       # Results processing utilities
+└── 📂 results/                         # Evaluation results storage
+    ├── 📄 comprehensive_evaluation_summary.json  # Overall evaluation summary
+    ├── 📄 DeepEval_Evaluation_Report.md         # DeepEval results report
+    ├── 📄 Final_Evaluation_Summary.md           # Final consolidated report
+    ├── 📄 RAGAS_Evaluation_Report.md            # RAGAS results report
+    ├── 📄 ragas_test_summary.json               # RAGAS test summary
+    ├── 📂 deepeval/                             # DeepEval specific results
+    │   └── 📄 deepeval_results.json             # Detailed DeepEval results
+    └── 📂 ragas/                                # RAGAS specific results
+        ├── 📄 ragas_groq_llama_3.1_8b_instant_detailed.csv   # Groq Llama 3.1 results
+        ├── 📄 ragas_groq_llama3_8b_8192_detailed.csv         # Groq Llama 3 results
+        ├── 📄 ragas_groq_llama3_8b_8192_summary.json         # Groq Llama 3 summary
+        ├── 📄 ragas_openai_gpt_3.5_turbo_detailed.csv        # GPT-3.5 Turbo results
+        └── 📄 ragas_openai_gpt_4o_mini_detailed.csv          # GPT-4o Mini results
+```
+
 ### `/scripts/` - **Setup & Automation**
 ```
 scripts/

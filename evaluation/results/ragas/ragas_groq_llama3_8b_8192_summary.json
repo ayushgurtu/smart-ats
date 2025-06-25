@@ -1,0 +1,60 @@
+{
+  "model_info": {
+    "provider": "groq",
+    "model": "llama3-8b-8192",
+    "evaluation_timestamp": "2025-06-18T20:25:33.779123",
+    "framework": "ragas_multiturn"
+  },
+  "evaluation_type": "multi_turn_conversation",
+  "total_turns_evaluated": 9,
+  "metrics_summary": {
+    "faithfulness": {
+      "average_score": 0.479951690821256,
+      "min_score": 0.0,
+      "max_score": 1.0,
+      "std_score": 0.4844971105337182,
+      "median_score": 0.45,
+      "total_evaluations": 9
+    },
+    "answer_relevancy": {
+      "average_score": 0.7226767375138198,
+      "min_score": 0.0,
+      "max_score": 0.9582024956642464,
+      "std_score": 0.41048421291535664,
+      "median_score": 0.9033681068836138,
+      "total_evaluations": 9
+    },
+    "context_precision": {
+      "average_score": 0.0,
+      "min_score": 0.0,
+      "max_score": 0.0,
+      "std_score": 0.0,
+      "median_score": 0.0,
+      "total_evaluations": 9
+    },
+    "context_recall": {
+      "average_score": 0.0,
+      "min_score": 0.0,
+      "max_score": 0.0,
+      "std_score": 0.0,
+      "median_score": 0.0,
+      "total_evaluations": 9
+    },
+    "answer_correctness": {
+      "average_score": 0.4020929424847521,
+      "min_score": 0.1873949456510158,
+      "max_score": 0.9587435137494486,
+      "std_score": 0.2820039977251697,
+      "median_score": 0.2074496768666815,
+      "total_evaluations": 9
+    },
+    "semantic_similarity": {
+      "average_score": 0.8104792931979331,
+      "min_score": 0.7495797826040634,
+      "max_score": 0.862703277582435,
+      "std_score": 0.040974773883466785,
+      "median_score": 0.8210441570980352,
+      "total_evaluations": 9
+    }
+  }
+}
