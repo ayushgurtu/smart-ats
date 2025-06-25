@@ -1,0 +1,78 @@
+{
+  "test_timestamp": "2025-06-19T18:47:29.010416",
+  "test_type": "deepeval",
+  "configuration": {
+    "test_cases_per_model": 1,
+    "total_models": 4
+  },
+  "model_results": {
+    "groq_llama3-8b-8192": {
+      "provider": "groq",
+      "model": "llama3-8b-8192",
+      "status": "completed",
+      "timestamp": "2025-06-19T18:48:08.242797",
+      "framework": "deepeval",
+      "total_test_cases": 1,
+      "requested_test_cases": 1,
+      "metrics": {
+        "Unknown": {
+          "average_score": 0.9464285714285714,
+          "min_score": 0.8928571428571429,
+          "max_score": 1.0,
+          "total_cases": 2
+        }
+      }
+    },
+    "groq_llama-3.1-8b-instant": {
+      "provider": "groq",
+      "model": "llama-3.1-8b-instant",
+      "status": "completed",
+      "timestamp": "2025-06-19T18:49:35.668560",
+      "framework": "deepeval",
+      "total_test_cases": 1,
+      "requested_test_cases": 1,
+      "metrics": {
+        "Unknown": {
+          "average_score": 1.0,
+          "min_score": 1.0,
+          "max_score": 1.0,
+          "total_cases": 2
+        }
+      }
+    },
+    "openai_gpt-3.5-turbo": {
+      "provider": "openai",
+      "model": "gpt-3.5-turbo",
+      "status": "completed",
+      "timestamp": "2025-06-19T18:51:03.217410",
+      "framework": "deepeval",
+      "total_test_cases": 1,
+      "requested_test_cases": 1,
+      "metrics": {
+        "Unknown": {
+          "average_score": 1.0,
+          "min_score": 1.0,
+          "max_score": 1.0,
+          "total_cases": 2
+        }
+      }
+    },
+    "openai_gpt-4o-mini": {
+      "provider": "openai",
+      "model": "gpt-4o-mini",
+      "status": "completed",
+      "timestamp": "2025-06-19T18:52:43.751693",
+      "framework": "deepeval",
+      "total_test_cases": 1,
+      "requested_test_cases": 1,
+      "metrics": {
+        "Unknown": {
+          "average_score": 1.0,
+          "min_score": 1.0,
+          "max_score": 1.0,
+          "total_cases": 2
+        }
+      }
+    }
+  }
+}

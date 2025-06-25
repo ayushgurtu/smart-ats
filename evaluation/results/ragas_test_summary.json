@@ -1,0 +1,22 @@
+{
+  "test_timestamp": "2025-06-18T21:43:42.250559",
+  "total_models_tested": 4,
+  "results": {
+    "groq_llama3-8b-8192": {
+      "duration_seconds": 155.21701192855835,
+      "completed": true
+    },
+    "groq_llama-3.1-8b-instant": {
+      "duration_seconds": 112.5057590007782,
+      "completed": true
+    },
+    "openai_gpt-3.5-turbo": {
+      "duration_seconds": 71.3386960029602,
+      "completed": true
+    },
+    "openai_gpt-4o-mini": {
+      "duration_seconds": 99.7300910949707,
+      "completed": true
+    }
+  }
+}
